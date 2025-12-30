@@ -14,14 +14,45 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Set up Rust cache
+      uses: Swatinem/rust-cache@v2
+
     - name: Set up Rust
       uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+
+    - name: Install sccache (Rust cache)
+      run: |
+        choco install sccache
+        echo "RUSTC_WRAPPER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        echo "SCCACHE_DIR=C:\sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+    - name: Cache Tauri CLI
+      id: cache-tauri-cli
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/cargo-tauri
+          ~/.cargo/bin/tauri
+        key: ${{ runner.os }}-tauri-cli-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-tauri-cli-
 
     - name: Install cargo-tauri
+      if: steps.cache-tauri-cli.outputs.cache-hit != 'true'
       run: cargo install tauri-cli --version "^2.0.0"
 
+
+
     - name: Build Tauri app
-      run: cargo tauri build
+      run: cargo tauri build --no-bundle
+      env:
+        SCCACHE_CACHE_SIZE: 2G
+        SCCACHE_DIR: C:\sccache
+
+    - name: Bundle installer
+      run: cargo tauri bundle
 
     - name: Upload built exe
       uses: actions/upload-artifact@v4
