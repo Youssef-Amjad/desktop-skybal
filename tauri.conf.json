@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "skybal",
+  "version": "0.1.0",
+  "identifier": "com.skybal.skybal",
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "skybal",
+        "fullscreen": true,
+        "url": "https://smart-service.skybalpos.com"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "category": "Business",
+    "copyright": "© 2022 Skybal All rights reserved.",
+    "publisher": "skybal",
+    "homepage": "https://skybalpos.com",
+    "license": "Proprietary",
+    "shortDescription": "Skybal for all system.",
+    "targets": ["nsis"],
+    "windows": {
+      "allowDowngrades": false,
+      "nsis": {
+        "installMode": "both"
+      }
+    },
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ]
+  }
+}
