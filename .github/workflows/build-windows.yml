@@ -1,0 +1,77 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Set up Rust
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+        targets: x86_64-pc-windows-msvc
+
+    # Use rust-cache for Cargo dependencies
+    - name: Set up Rust cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        key: windows
+        cache-on-failure: true
+
+    # Cache Tauri CLI binary
+    - name: Cache Tauri CLI
+      id: cache-tauri-cli
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/bin/cargo-tauri.exe
+        key: windows-tauri-cli-2.0-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          windows-tauri-cli-2.0-
+
+    # Install Tauri CLI
+    - name: Install cargo-tauri
+      if: steps.cache-tauri-cli.outputs.cache-hit != 'true'
+      run: cargo install tauri-cli --version "^2.0.0" --locked
+
+    # Run tests
+    - name: Run tests
+      run: cargo test --workspace
+
+    # Run clippy
+    - name: Run clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+
+    # Build the app
+    - name: Build app
+      run: cargo build --release
+
+    # Bundle the application
+    - name: Bundle application
+      run: cargo tauri build
+
+    # Upload Windows installer
+    - name: Upload Windows installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: skybal-windows-installer
+        path: target/release/bundle/nsis/*.exe
+        if-no-files-found: error
+
+    # Print build info
+    - name: Print build summary
+      run: |
+        echo "✅ Windows build completed successfully"
+        Get-ChildItem -Path target/release/bundle/nsis -Filter *.exe | ForEach-Object {
+          $size = [math]::Round($_.Length / 1MB, 2)
+          Write-Host "$($_.Name) - ${size}MB"
+        }
